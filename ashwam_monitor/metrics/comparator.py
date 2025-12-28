@@ -12,7 +12,8 @@ from .extractors import (
     compute_uncertainty_rate,
     compute_extraction_volume,
     compute_domain_distribution,
-    compute_arousal_distribution
+    compute_arousal_distribution,
+    compute_intensity_distribution
 )
 
 
@@ -154,11 +155,45 @@ def run_drift_analysis(
     if curr_arousal.get("high", 0) > 0.9 and base_arousal.get("high", 0) < 0.7:
         alerts.append(f"CRITICAL: arousal collapsed to {curr_arousal.get('high', 0)*100:.0f}% high")
 
+    # intensity distribution for non-emotion domains
+    base_intensity = compute_intensity_distribution(baseline_items)
+    curr_intensity = compute_intensity_distribution(current_items)
+    intensity_metric = compare_distributions(base_intensity, curr_intensity, "intensity_distribution", thresholds)
+    metrics.append(intensity_metric)
+
+    # confidence distribution using ks test
+    base_conf = [i.confidence for i in baseline_items]
+    curr_conf = [i.confidence for i in current_items]
+    ks_stat, ks_pval = ks_test(base_conf, curr_conf)
+
+    conf_status = DriftStatus.STABLE
+    if ks_pval < 0.01:
+        conf_status = DriftStatus.BREAKAGE
+    elif ks_pval < 0.05:
+        conf_status = DriftStatus.DRIFT
+
+    base_conf_mean = sum(base_conf) / len(base_conf) if base_conf else 0
+    curr_conf_mean = sum(curr_conf) / len(curr_conf) if curr_conf else 0
+    conf_change = (curr_conf_mean - base_conf_mean) / base_conf_mean * 100 if base_conf_mean > 0 else 0
+
+    metrics.append(DriftMetric(
+        name="confidence_distribution",
+        baseline_value=round(base_conf_mean, 3),
+        current_value=round(curr_conf_mean, 3),
+        change_pct=round(conf_change, 1),
+        ks_statistic=ks_stat,
+        ks_pvalue=ks_pval,
+        status=conf_status
+    ))
+
     if domain_metric.status == DriftStatus.BREAKAGE:
         alerts.append("CRITICAL: significant domain distribution shift detected")
 
     if arousal_metric.status == DriftStatus.BREAKAGE:
         alerts.append("CRITICAL: significant arousal distribution shift detected")
+
+    if conf_status != DriftStatus.STABLE:
+        alerts.append(f"WARNING: confidence distribution shifted (KS p={ks_pval:.4f})")
 
     return DriftReport(
         timestamp=datetime.now(),
