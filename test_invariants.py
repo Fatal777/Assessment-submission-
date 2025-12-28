@@ -1,4 +1,4 @@
-"""quick test of invariant checks"""
+#quick test of invariant checks
 from pathlib import Path
 from ashwam_monitor.io.loader import load_parser_outputs, load_journals_as_dict
 from ashwam_monitor.invariants.runner import run_invariant_checks
