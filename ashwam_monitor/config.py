@@ -30,6 +30,16 @@ class CanaryThresholds:
     f1_rollback: float = 0.40
     min_evidence_match: float = 0.80
 
+    # frequency - when canary should run
+    run_frequency: str = "every deployment + every 6 hours"
+
+    # rationale for thresholds
+    threshold_rationale: str = (
+        "f1_pass=0.70 is target quality level for healthy system. "
+        "f1_rollback=0.40 derived from baseline performance. "
+        "thresholds spaced 0.10 apart to allow graduated response."
+    )
+
 
 @dataclass
 class HumanReviewConfig:
