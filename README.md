@@ -110,6 +110,12 @@ python -m ashwam_monitor run --data ./data --out ./out
 python -m ashwam_monitor run -d ./data -o ./out -v
 ```
 
+**Run with logging and history storage (production mode):**
+```bash
+python -m ashwam_monitor run --data ./data --out ./out -v --log --store-history
+```
+This enables file logging to `out/logs/` and saves run metrics to SQLite for trend analysis.
+
 **Check invariants only:**
 ```bash
 python -m ashwam_monitor invariants --outputs ./data/parser_outputs_day1.jsonl --journals ./data/journals.jsonl
